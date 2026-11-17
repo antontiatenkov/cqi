@@ -135,26 +135,38 @@ class PythonASTAnalyzer(ast.NodeVisitor):
             return value.attr.lower() in NETWORK_RECEIVERS_PY or self._is_network_receiver(value.value)
         return False
 
+    def _has_shell_true(self, keywords: List[ast.keyword]) -> bool:
+        """Проверяет, передан ли именованный аргумент shell=True."""
+        return any(
+            kw.arg == "shell"
+            and isinstance(kw.value, ast.Constant)
+            and kw.value.value is True
+            for kw in keywords
+        )
+
+    def _check_network_timeout(self, node: ast.Call) -> None:
+        """Учитывает сетевой вызов на известном клиенте, если не передан timeout."""
+        if not isinstance(node.func, ast.Attribute):
+            return
+        if node.func.attr not in NETWORK_CALLS_PY:
+            return
+        if not self._is_network_receiver(node.func.value):
+            return
+        if not any(kw.arg == "timeout" for kw in node.keywords):
+            self.network_calls_without_timeout += 1
+
     def visit_Call(self, node: ast.Call) -> None:
         """Проверяет вызовы на опасные конструкции и отсутствие timeout у сетевых запросов."""
-        if isinstance(node.func, ast.Name) and node.func.id in DANGEROUS_CALLS_PY:
-            self.dangerous_calls += 1
+        self._check_network_timeout(node)
 
-        if isinstance(node.func, ast.Attribute):
-            attr = node.func.attr
-            if attr in NETWORK_CALLS_PY and self._is_network_receiver(node.func.value):
-                kw_names = {kw.arg for kw in node.keywords if kw.arg}
-                if "timeout" not in kw_names:
-                    self.network_calls_without_timeout += 1
-
-            if attr in SUBPROCESS_CALLS_PY:
-                for kw in node.keywords:
-                    if kw.arg == "shell" and isinstance(kw.value, ast.Constant) and kw.value.value is True:
-                        self.dangerous_calls += 1
-        elif isinstance(node.func, ast.Name) and node.func.id in SUBPROCESS_CALLS_PY:
-            for kw in node.keywords:
-                if kw.arg == "shell" and isinstance(kw.value, ast.Constant) and kw.value.value is True:
-                    self.dangerous_calls += 1
+        if isinstance(node.func, ast.Name):
+            if node.func.id in DANGEROUS_CALLS_PY:
+                self.dangerous_calls += 1
+            if node.func.id in SUBPROCESS_CALLS_PY and self._has_shell_true(node.keywords):
+                self.dangerous_calls += 1
+        elif isinstance(node.func, ast.Attribute):
+            if node.func.attr in SUBPROCESS_CALLS_PY and self._has_shell_true(node.keywords):
+                self.dangerous_calls += 1
 
         self.generic_visit(node)
 
