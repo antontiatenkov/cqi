@@ -1,0 +1,13 @@
+[project]
+name = "cqi"
+version = "0.1.0"
+description = "Automated Code Quality Index (CQI) auditor"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.scripts]
+cqi = "code_quality_auditor:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
