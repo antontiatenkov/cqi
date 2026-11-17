@@ -1,7 +1,12 @@
-"""Генерация отчетов в стиле Google Lighthouse (SVG и standalone HTML)."""
+"""Генерация отчетов в стиле Google Lighthouse (SVG, PNG и standalone HTML)."""
 
 import html
+import importlib
 import math
+import shutil
+import subprocess
+import tempfile
+from pathlib import Path
 from typing import Tuple
 
 from cqi.models import AuditReport, DimensionScore
@@ -330,13 +335,71 @@ def render_html_report(report: AuditReport) -> str:
 
 def write_svg_report(report: AuditReport, output_path: object) -> None:
     """Сохраняет SVG-отчет CQI в указанный файл."""
-    from pathlib import Path
-
     Path(str(output_path)).write_text(render_svg_report(report), encoding="utf-8")
 
 
 def write_html_report(report: AuditReport, output_path: object) -> None:
     """Сохраняет HTML-отчет CQI в указанный файл."""
-    from pathlib import Path
-
     Path(str(output_path)).write_text(render_html_report(report), encoding="utf-8")
+
+
+def _svg_to_png_via_cli(svg_path: Path, png_path: Path, scale: float) -> bool:
+    """Пробует сконвертировать SVG в PNG через системные CLI-утилиты."""
+    dpi = int(round(96 * scale))
+    if rsvg := shutil.which("rsvg-convert"):
+        subprocess.run(
+            [rsvg, "-z", str(scale), "-o", str(png_path), str(svg_path)],
+            check=True,
+            capture_output=True,
+            timeout=30,
+        )
+        return True
+
+    if magick := (shutil.which("magick") or shutil.which("convert")):
+        subprocess.run(
+            [magick, "-background", "none", "-density", str(dpi), str(svg_path), str(png_path)],
+            check=True,
+            capture_output=True,
+            timeout=30,
+        )
+        return True
+
+    if inkscape := shutil.which("inkscape"):
+        subprocess.run(
+            [inkscape, str(svg_path), "--export-type=png", f"--export-dpi={dpi}", f"--export-filename={png_path}"],
+            check=True,
+            capture_output=True,
+            timeout=30,
+        )
+        return True
+
+    return False
+
+
+def render_png_report(report: AuditReport, scale: float = 2.0) -> bytes:
+    """Рендерит SVG-отчет CQI в байты PNG с заданным масштабом."""
+    svg_text = render_svg_report(report)
+    try:
+        cairosvg = importlib.import_module("cairosvg")
+    except ImportError:
+        cairosvg = None
+
+    if cairosvg is not None:
+        return bytes(cairosvg.svg2png(bytestring=svg_text.encode("utf-8"), scale=scale))
+
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp_dir = Path(tmp)
+        svg_path = tmp_dir / "report.svg"
+        png_path = tmp_dir / "report.png"
+        svg_path.write_text(svg_text, encoding="utf-8")
+        if _svg_to_png_via_cli(svg_path, png_path, scale) and png_path.exists():
+            return png_path.read_bytes()
+
+    raise RuntimeError(
+        "Не найден конвертер SVG->PNG. Установите cairosvg, rsvg-convert, ImageMagick или Inkscape."
+    )
+
+
+def write_png_report(report: AuditReport, output_path: object, scale: float = 2.0) -> None:
+    """Сохраняет PNG-отчет CQI (отрендеренный из SVG-карточки) в указанный файл."""
+    Path(str(output_path)).write_bytes(render_png_report(report, scale=scale))

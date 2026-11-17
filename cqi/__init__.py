@@ -3,8 +3,10 @@
 from cqi.ast_analyzer import PythonASTAnalyzer
 from cqi.lighthouse_reporter import (
     render_html_report,
+    render_png_report,
     render_svg_report,
     write_html_report,
+    write_png_report,
     write_svg_report,
 )
 from cqi.models import AuditReport, DimensionScore, FileMetrics, clamp
@@ -23,9 +25,11 @@ __all__ = [
     "is_test_file",
     "print_cli_report",
     "render_html_report",
+    "render_png_report",
     "render_svg_report",
     "scan_directory",
     "write_html_report",
     "write_json_report",
+    "write_png_report",
     "write_svg_report",
 ]

@@ -21,6 +21,7 @@ from cqi import (
     scan_directory,
     write_html_report,
     write_json_report,
+    write_png_report,
     write_svg_report,
 )
 
@@ -54,6 +55,7 @@ def main() -> None:
     parser.add_argument("--json-out", type=str, default="", help="Путь для сохранения JSON-отчета")
     parser.add_argument("--html-out", type=str, default="", help="Путь для сохранения HTML-отчета (Lighthouse)")
     parser.add_argument("--svg-out", type=str, default="", help="Путь для сохранения SVG-отчета (Lighthouse)")
+    parser.add_argument("--png-out", type=str, default="", help="Путь для сохранения PNG-отчета (рендер SVG-карточки)")
     args = parser.parse_args()
 
     target = Path(args.path).resolve()
@@ -71,6 +73,8 @@ def main() -> None:
         write_html_report(report, Path(args.html_out))
     if args.svg_out:
         write_svg_report(report, Path(args.svg_out))
+    if args.png_out:
+        write_png_report(report, Path(args.png_out))
 
 
 if __name__ == "__main__":

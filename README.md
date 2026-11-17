@@ -73,11 +73,13 @@ python3 code_quality_auditor.py /path/to/project \
   --profile erp \
   --json-out report.json \
   --html-out report.html \
-  --svg-out report.svg
+  --svg-out report.svg \
+  --png-out report.png
 ```
 
 * `--html-out` — автономный интерактивный HTML-отчет в стиле Google Lighthouse (поддерживает светлую и тёмную тему).
 * `--svg-out` — компактная SVG-карточка с круговыми индикаторами для README или артефактов CI.
+* `--png-out` — растровый PNG-рендер SVG-карточки (через `cairosvg`, `rsvg-convert`, ImageMagick или Inkscape).
 * `--json-out` — структурированный JSON со всеми метриками и списком `hotspots`.
 
 ### 6. MCP-сервер (Model Context Protocol)
@@ -100,7 +102,7 @@ python3 code_quality_auditor.py /path/to/project \
 
 Доступные инструменты MCP:
 
-* `audit_project` (`path`, `profile`, `json_out`, `html_out`, `svg_out`) — полный аудит проекта с опциональным сохранением отчетов.
+* `audit_project` (`path`, `profile`, `json_out`, `html_out`, `svg_out`, `png_out`) — полный аудит проекта с опциональным сохранением отчетов.
 * `audit_file` (`file_path`, `root_path`) — сбор статических AST- и структурных метрик для одного файла.
 * `render_lighthouse_report` (`path`, `format`: `svg` | `html`, `profile`) — генерация Lighthouse-отчета в виде строки SVG или HTML.
 

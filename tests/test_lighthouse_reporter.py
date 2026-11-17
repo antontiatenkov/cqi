@@ -3,13 +3,16 @@
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from cqi.lighthouse_reporter import (
     _gate_colors,
     _score_color,
     render_html_report,
+    render_png_report,
     render_svg_report,
     write_html_report,
+    write_png_report,
     write_svg_report,
 )
 from cqi.models import AuditReport, DimensionScore
@@ -163,6 +166,24 @@ class TestSvgAndHtmlRendering(unittest.TestCase):
             assert html_file.exists()
             assert "<svg " in svg_file.read_text(encoding="utf-8")
             assert "<!DOCTYPE html>" in html_file.read_text(encoding="utf-8")
+
+    def test_write_png_report_produces_valid_png(self) -> None:
+        """write_png_report рендерит SVG-карточку в валидный PNG-файл."""
+        report = _make_sample_report()
+        with tempfile.TemporaryDirectory() as tmp:
+            png_file = Path(tmp) / "cqi.png"
+            write_png_report(report, png_file)
+            assert png_file.exists()
+            data = png_file.read_bytes()
+            assert data.startswith(b"\x89PNG\r\n\x1a\n")
+
+    def test_render_png_raises_when_no_converter_available(self) -> None:
+        """render_png_report выбрасывает RuntimeError, если не найден ни один конвертер."""
+        report = _make_sample_report()
+        with mock.patch("cqi.lighthouse_reporter.shutil.which", return_value=None), \
+             mock.patch("cqi.lighthouse_reporter.importlib.import_module", side_effect=ImportError):
+            with self.assertRaises(RuntimeError):
+                render_png_report(report)
 
 
 if __name__ == "__main__":

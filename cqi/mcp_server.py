@@ -10,6 +10,7 @@ from cqi.lighthouse_reporter import (
     render_html_report,
     render_svg_report,
     write_html_report,
+    write_png_report,
     write_svg_report,
 )
 from cqi.reporter import write_json_report
@@ -40,6 +41,7 @@ TOOLS_SCHEMA: List[Dict[str, Any]] = [
                 "json_out": {"type": "string", "description": "Опциональный путь для JSON-отчета"},
                 "html_out": {"type": "string", "description": "Опциональный путь для HTML-отчета"},
                 "svg_out": {"type": "string", "description": "Опциональный путь для SVG-отчета"},
+                "png_out": {"type": "string", "description": "Опциональный путь для PNG-отчета"},
             },
             "required": ["path"],
         },
@@ -105,6 +107,8 @@ def _tool_audit_project(args: Dict[str, Any]) -> str:
         write_html_report(report, Path(str(args["html_out"])))
     if args.get("svg_out"):
         write_svg_report(report, Path(str(args["svg_out"])))
+    if args.get("png_out"):
+        write_png_report(report, Path(str(args["png_out"])))
 
     return json.dumps(asdict(report), ensure_ascii=False, indent=2)
 
