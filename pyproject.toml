@@ -8,6 +8,7 @@ dependencies = []
 
 [project.scripts]
 cqi = "code_quality_auditor:main"
+cqi-mcp = "cqi.mcp_server:main"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

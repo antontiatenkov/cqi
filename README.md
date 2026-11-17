@@ -57,3 +57,55 @@ $$s(x) = \text{clamp}\left(100 \times \frac{T_{\text{bad}} - x}{T_{\text{bad}} -
 * **60.0 - 74.9 (Грейд C, Acceptable):** заметный технический долг (крупные модули, пробелы в типизации или нехватка тестов). Слияние кода разрешается с предупреждением (`WARN`) и требованием не снижать текущий базовый индекс (Ratcheting).
 * **45.0 - 59.9 (Грейд D, High Debt):** высокий риск регрессий при модификации, требуется выделенный спринт на рефакторинг ядра. Статус `BLOCKED` для релизных веток.
 * **Менее 45.0 (Грейд F, Critical):** критические проблемы безопасности, отказоустойчивости или монолитные спагетти-функции. Автоматическая блокировка пайплайна (`BLOCKED`).
+
+---
+
+### 5. Использование CLI
+
+Проект не требует сторонних зависимостей (достаточно Python 3.10+).
+
+```bash
+# Базовый аудит текущей директории (профиль по умолчанию: saas)
+python3 code_quality_auditor.py .
+
+# Выбор профиля весов (saas, erp, mvp) и генерация отчетов
+python3 code_quality_auditor.py /path/to/project \
+  --profile erp \
+  --json-out report.json \
+  --html-out report.html \
+  --svg-out report.svg
+```
+
+* `--html-out` — автономный интерактивный HTML-отчет в стиле Google Lighthouse (поддерживает светлую и тёмную тему).
+* `--svg-out` — компактная SVG-карточка с круговыми индикаторами для README или артефактов CI.
+* `--json-out` — структурированный JSON со всеми метриками и списком `hotspots`.
+
+### 6. MCP-сервер (Model Context Protocol)
+
+Инструмент можно подключить как stdio MCP-сервер (`cqi.mcp_server` или скрипт `cqi-mcp` после `pip install -e .`).
+
+Пример конфигурации клиента:
+
+```json
+{
+  "mcpServers": {
+    "cqi": {
+      "command": "python3",
+      "args": ["-m", "cqi.mcp_server"],
+      "cwd": "<path/to/dir>"
+    }
+  }
+}
+```
+
+Доступные инструменты MCP:
+
+* `audit_project` (`path`, `profile`, `json_out`, `html_out`, `svg_out`) — полный аудит проекта с опциональным сохранением отчетов.
+* `audit_file` (`file_path`, `root_path`) — сбор статических AST- и структурных метрик для одного файла.
+* `render_lighthouse_report` (`path`, `format`: `svg` | `html`, `profile`) — генерация Lighthouse-отчета в виде строки SVG или HTML.
+
+### 7. Запуск тестов
+
+```bash
+python3 -m unittest discover -s tests -v
+```
